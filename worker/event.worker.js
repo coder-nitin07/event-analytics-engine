@@ -12,17 +12,28 @@ const worker = new Worker(
 
         const { events } = job.data;
 
-        console.log(`📊 Processing ${events.length} events`);
+        console.log(`Processing ${events.length} events`);
+
+        // Aggregation logic
+        const aggregation = {};
+
+        for(const event of events){
+            const type = event.eventType;
+
+            if(!aggregation[type]){
+                aggregation[type] = 0;
+            }
+
+            aggregation[type]++;
+        }
 
         // Simulate processing
         await delay(2000);
 
-        // Example aggregation (simple count)
-        const count = events.length;
+        console.log("Aggregated Result:");
+        console.log(aggregation);   
 
-        console.log(`✅ Batch processed. Total events: ${count}`);
-
-        return { processed: count };
+        return aggregation;
     },
     {
         connection: redisConnection,
