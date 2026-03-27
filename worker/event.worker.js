@@ -10,16 +10,23 @@ const worker = new Worker(
         console.log(`Worker started processing Job`, job.id);
         console.log(`Processing Job`, job.data);
 
-        // heavy processing
+        const { events } = job.data;
+
+        console.log(`📊 Processing ${events.length} events`);
+
+        // Simulate processing
         await delay(2000);
 
-        console.log(`Processing event`, job.data.eventType);
+        // Example aggregation (simple count)
+        const count = events.length;
 
-        // success result
-        return { stauts: "processed" };
+        console.log(`✅ Batch processed. Total events: ${count}`);
+
+        return { processed: count };
     },
     {
-        connection: redisConnection
+        connection: redisConnection,
+        concurrency: 5
     }
 );
 
