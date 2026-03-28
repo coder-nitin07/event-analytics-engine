@@ -1,3 +1,4 @@
+import logger from "../../utils/logger.js";
 import { handleEvent } from "../services/event.service.js";
 
 export const trackEvent = (req, res)=>{
@@ -11,6 +12,11 @@ export const trackEvent = (req, res)=>{
             });
         }
 
+        logger.info(
+            { service: 'api', eventType },
+            "Incoming event received"
+        )
+
         // call service
         handleEvent({ eventType, userId });
 
@@ -18,6 +24,11 @@ export const trackEvent = (req, res)=>{
             message: 'Event received'
         });
     } catch (err) {
+        logger.error(
+             { service: "api", error: err.message },
+            "Error in trackEvent"
+        );
+
         console.log("Error in trackEvent", err);
         return res.status(500).json({
             err: "Internal Server Error"

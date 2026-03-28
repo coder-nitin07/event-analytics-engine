@@ -3,6 +3,7 @@ import redisConnection from "../config/redis.config.js";
 import connectDB from "../config/db.js";
 import analyticsModel from "../models/analytics.model.js";
 import emitter from "../events/emitter.js";
+import logger from '../utils/logger.js';
 
 // funtion to simulate delay
 const delay = (ms) => new Promise((resolve)=> setTimeout(resolve, ms));
@@ -13,14 +14,19 @@ await connectDB();
 const worker = new Worker(
     "eventQueue",
     async (job)=>{
-        console.log(`Worker started processing Job`, job.id);
-        console.log(`Processing Job`, job.data);
+        logger.info(
+            { service: "worker", jobId: job.id },
+            "Worker started processing job"
+        );
 
         emitter.emit('job.processing', job.id);
 
         const { events } = job.data;
 
-        console.log(`Processing ${events.length} events`);
+        logger.info(
+            { service: "worker", jobId: job.id, eventCount: events.length },
+            "Processing events"
+        );
 
         // Aggregation logic
         const aggregation = {};
@@ -35,21 +41,36 @@ const worker = new Worker(
             aggregation[type]++;
         }
 
-       
-
-        console.log("Aggregated Result:");
-        console.log(aggregation);   
+       logger.info(
+            { service: "worker", aggregation },
+            "Aggregation completed"
+        );
 
         // current date
         const today = new Date().toISOString().split('T')[0];
 
-        // save to DB
-        for(const [ eventType, count ] of Object.entries(aggregation)){
-            await analyticsModel.updateOne(
-                    { date: today, eventType },
-                    { $inc: { count } }, 
-                    { upsert: true }     
-            )
+        try {
+            // save to DB
+            for(const [ eventType, count ] of Object.entries(aggregation)){
+                await analyticsModel.updateOne(
+                        { date: today, eventType },
+                        { $inc: { count } }, 
+                        { upsert: true }     
+                )
+            }
+
+            logger.info(
+                { service: "worker", jobId: job.id },
+                "Data saved to DB"
+            );
+
+        } catch (error) {
+            logger.error(
+                { service: "worker", jobId: job.id, error: error.message },
+                "DB operation failed"
+            );
+
+            throw error; // ✅ IMPORTANT for retry
         }
 
         // Simulate processing
@@ -66,11 +87,17 @@ const worker = new Worker(
 );
 
 worker.on('completed', (job, result)=>{
-    console.log(`Job completed ${ job.id }`, result);
+   logger.info(
+        { service: "worker", jobId: job.id, result },
+        "Job completed"
+    );
 });
 
 worker.on('failed', (job, err)=>{
-    console.log(`Job failed: ${ job.id }`, err.message);
+     logger.error(
+        { service: "worker", jobId: job?.id, error: err.message },
+        "Job failed"
+    );
 });
 
-console.log("Worker is running...");
+logger.info({ service: "worker" }, "Worker is running...");
