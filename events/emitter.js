@@ -15,4 +15,16 @@ emitter.on('job.queued', ()=>{
     console.log('Job.queued');
 });
 
+emitter.on("job.processing", (jobId) => {
+  console.log(`job.processing: ${ jobId }`);
+});
+
+emitter.on("job.completed", (jobId) => {
+  console.log(`job.completed: ${ jobId }`);
+});
+
+emitter.on("job.failed", ({ jobId, error }) => {
+  console.log(`job.failed: ${ jobId }`, error.message);
+});
+
 export default emitter;

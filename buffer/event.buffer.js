@@ -20,7 +20,16 @@ export const addToBuffer = async (event)=> {
         emitter.emit('event.batched', batch);
 
         // send to queue
-        await eventQueue.add('event batch-job', { events: batch });
+        await eventQueue.add('event batch-job', 
+            { events: batch },
+            {
+                attempts: 3,
+                backoff: {
+                    type: 'exponential',
+                    delay: 2000
+                }
+            }
+        );
 
         emitter.emit('job.queued', batch);
 

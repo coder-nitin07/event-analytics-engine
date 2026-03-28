@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 import redisConnection from "../config/redis.config.js";
 import connectDB from "../config/db.js";
 import analyticsModel from "../models/analytics.model.js";
+import emitter from "../events/emitter.js";
 
 // funtion to simulate delay
 const delay = (ms) => new Promise((resolve)=> setTimeout(resolve, ms));
@@ -14,6 +15,8 @@ const worker = new Worker(
     async (job)=>{
         console.log(`Worker started processing Job`, job.id);
         console.log(`Processing Job`, job.data);
+
+        emitter.emit('job.processing', job.id);
 
         const { events } = job.data;
 
