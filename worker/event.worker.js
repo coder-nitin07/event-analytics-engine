@@ -1,8 +1,13 @@
 import { Worker } from "bullmq";
 import redisConnection from "../config/redis.config.js";
+import connectDB from "../config/db.js";
+import analyticsModel from "../models/analytics.model.js";
 
 // funtion to simulate delay
 const delay = (ms) => new Promise((resolve)=> setTimeout(resolve, ms));
+
+// connect DB
+await connectDB();
 
 const worker = new Worker(
     "eventQueue",
@@ -27,11 +32,27 @@ const worker = new Worker(
             aggregation[type]++;
         }
 
-        // Simulate processing
-        await delay(2000);
+       
 
         console.log("Aggregated Result:");
         console.log(aggregation);   
+
+        // current date
+        const today = new Date().toISOString().split('T')[0];
+
+        // save to DB
+        for(const [ eventType, count ] of Object.entries(aggregation)){
+            await analyticsModel.updateOne(
+                    { date: today, eventType },
+                    { $inc: { count } }, 
+                    { upsert: true }     
+            )
+        }
+
+        // Simulate processing
+        await delay(2000);
+
+        console.log("Data saved to DB");
 
         return aggregation;
     },
