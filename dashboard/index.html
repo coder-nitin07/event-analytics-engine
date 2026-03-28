@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #94a3b8;
+    }
+
+    .card p {
+      font-size: 28px;
+      margin: 10px 0 0;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    canvas {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Analytics Dashboard</h1>
+
+    <div class="cards">
+      <div class="card">
+        <h2>Total Events</h2>
+        <p id="totalEvents">0</p>
+      </div>
+
+      <div class="card">
+        <h2>Failed Jobs</h2>
+        <p id="failedJobs">0</p>
+      </div>
+    </div>
+
+    <div class="charts">
+      <canvas id="eventsChart"></canvas>
+      <canvas id="typesChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:3000/api";
+
+    async function loadAnalytics() {
+      const res = await fetch(`${API_BASE}/analytics`);
+      const data = await res.json();
+
+      document.getElementById("totalEvents").innerText = data.totalEvents;
+
+      // Events per day chart
+      const labels = data.eventsPerDay.map(e => e.date);
+      const counts = data.eventsPerDay.map(e => e.count);
+
+      new Chart(document.getElementById("eventsChart"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Events per Day",
+            data: counts
+          }]
+        }
+      });
+
+      // Top event types chart
+      const typeLabels = data.topEventTypes.map(e => e.eventType);
+      const typeCounts = data.topEventTypes.map(e => e.count);
+
+      new Chart(document.getElementById("typesChart"), {
+        type: "bar",
+        data: {
+          labels: typeLabels,
+          datasets: [{
+            label: "Top Event Types",
+            data: typeCounts
+          }]
+        }
+      });
+    }
+
+    async function loadJobs() {
+      const res = await fetch(`${API_BASE}/jobs`);
+      const jobs = await res.json();
+
+      const failed = jobs.filter(j => j.status === "failed").length;
+      document.getElementById("failedJobs").innerText = failed;
+    }
+
+    async function init() {
+      await loadAnalytics();
+      await loadJobs();
+    }
+
+    init();
+  </script>
+</body>
+</html>

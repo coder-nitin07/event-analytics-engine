@@ -3,9 +3,13 @@ import dotenv from 'dotenv';
 import eventRouter from './routes/events.routes.js';
 import analyticsRouter from './routes/analytics.routes.js';
 import connectDB from '../config/db.js';
+import cors from "cors";
 const app = express();
 
 dotenv.config();
+
+// enable CORS for all origins
+app.use(cors());
 
 // connect db
 await connectDB();
